@@ -66,13 +66,25 @@ start a build in the Signaloid Cloud Compute Engine, and download the resulting
 
 #### Prerequisites:
 
+- A supported Signaloid compute module (see compatibility above) and its device
+  path on your host.
 - A [Signaloid account](https://get.signaloid.io).
+- A GitHub account connected to your Signaloid account, as shown in the
+  [GitHub Login guide](https://docs.signaloid.io/docs/platform/user-interface/repositories/github-login/),
+  so you can fork this template repository, push your changes, and build it on
+  the [Signaloid Cloud Developer Platform](https://signaloid.io).
 - An API key for authentication.
-  [Create one here](https://signaloid.io/settings/api)
+  [Create one here](https://signaloid.io/settings/api).
 - The [Signaloid CLI](https://docs.signaloid.io/docs/api/signaloid-cli/intro/)
   installed and authenticated as shown in its
-  [official documentation](https://docs.signaloid.io/docs/api/signaloid-cli/installation/).
+  [installation](https://docs.signaloid.io/docs/api/signaloid-cli/installation/)
+  and
+  [authentication](https://docs.signaloid.io/docs/api/signaloid-cli/authentication/)
+  documentation.
+- **Python 3.10 or later** for the host application and the flashing toolkit.
+- Root privileges (`sudo`) for raw block-device access.
 
+#### Build the firmware
 To build, run `make`. This connects the repository (first run only), starts a
 cloud build, waits for it to finish, and downloads `main.bin` into the
 repository root.
