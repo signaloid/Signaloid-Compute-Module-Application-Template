@@ -116,11 +116,11 @@ connect $(REPO_ID_FILE):
 #  - Update build directory
 #  - Update selected Core ID
 update: $(REPO_ID_FILE)
-	@$(SIGNALOID_CLI) repos update \
+	@RESPONSE=$$($(SIGNALOID_CLI) repos update \
 		--repo-id $(REPO_ID) \
 		--branch $(REPO_BRANCH) \
 		--dir $(BUILD_DIR) \
-		--core-id $(CORE_ID)
+		--core-id $(CORE_ID))
 
 # Create a build for the repo
 build $(BUILD_ID_FILE): $(REPO_ID_FILE)
@@ -156,35 +156,35 @@ flash-C0-microSD: $(BINARY_FILE)
 		echo "Error: Binary file is too large ($$file_size bytes)."; \
 		exit 1; \
 	fi
-	@$(PYTHON) $(UTILITIES_DIR)/C0_microSD_toolkit.py -t $(DEVICE) -b $(BINARY_FILE) -U -p 128K
+	@sudo $(PYTHON) $(UTILITIES_DIR)/C0_microSD_toolkit.py -t $(DEVICE) -b $(BINARY_FILE) -U -p 128K
 
 flash-C0-microSD-Plus: $(BINARY_FILE) stop
 	@echo "\n- Flashing: Signaloid C0-microSD+ [$(DEVICE)]"
-	@$(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) flash-application $(BINARY_FILE)
+	@sudo $(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) flash-application $(BINARY_FILE)
 
 flash-C0-SD: $(BINARY_FILE) stop
 	@echo "\n- Flashing: Signaloid C0-SD [$(DEVICE)]"
-	@$(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) flash-application $(BINARY_FILE)
+	@sudo $(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) flash-application $(BINARY_FILE)
 
 # Switch mode (Bootloader - Signaloid SoC) of the C0-microSD
 switch:
 	@echo "\n- Switching: Signaloid C0-microSD [$(DEVICE)]"
-	@$(TOOLKIT) -t $(DEVICE) -s
+	@sudo $(TOOLKIT) -t $(DEVICE) -s
 
 # Start the Signaloid SoC core
 start:
-	@$(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) config core-start
+	@sudo $(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) config core-start
 
 # Stop the Signaloid SoC core
 stop:
-	@$(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) config core-stop
+	@sudo $(PYTHON) $(UTILITIES_DIR)/C0_SD_toolkit.py --variant=$(DEVICE_VARIANT) $(DEVICE) config core-stop
 
 # Reset the Signaloid SoC core
 reset: stop start
 
 # Print the compute module debug logs continuously
 log:
-	@$(PYTHON) $(UTILITIES_DIR)/C0_debug_logger.py --variant=$(DEVICE_VARIANT) $(DEVICE)
+	@sudo $(PYTHON) $(UTILITIES_DIR)/C0_debug_logger.py --variant=$(DEVICE_VARIANT) $(DEVICE)
 
 # Create the virtual environment needed for running the host application
 venv $(VENV_DIR):
@@ -194,7 +194,7 @@ venv $(VENV_DIR):
 	@$(VENV_DIR)/bin/pip install -r $(ROOT_DIR)/python-host-application/requirements.txt
 
 # Base command to run the host application
-RUN_CMD=$(VENV_DIR)/bin/python3 -u $(ROOT_DIR)/python-host-application/host_application.py --device-path $(DEVICE) --variant $(DEVICE_VARIANT)
+RUN_CMD=sudo $(VENV_DIR)/bin/python3 -u $(ROOT_DIR)/python-host-application/host_application.py --device-path $(DEVICE) --variant $(DEVICE_VARIANT)
 
 # Run multiple host application commands. Useful for testing.
 run-all: $(VENV_DIR)
