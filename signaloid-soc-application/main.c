@@ -37,8 +37,47 @@ typedef enum
 } SignaloidSoCCommand;
 
 
-int
-main(void)
+/*
+ * Helper functions
+ */
+
+SignaloidSoCCommand
+waitForCommand(void)
+{
+	SignaloidSoCCommand command = kCalculateNoCommand;
+
+	/*
+	 *	Set status to "waitingForCommand"
+	 */
+	C0HALSetStatusRegister(kSignaloidSoCStatusWaitingForCommand);
+
+	/*
+	 *	Block until command is issued
+	 */
+	while (command == kCalculateNoCommand)
+	{
+		command = C0HALGetCommandRegister();
+	}
+
+	return command;
+}
+
+void
+waitForIdle(void)
+{
+	/*
+	 *	Block until command is cleared
+	 */
+	while (C0HALGetCommandRegister() != kCalculateNoCommand) {}
+}
+
+
+/*
+ * Application Logic
+ */
+
+void
+handleAddition(void)
 {
 	float   inputDistributionA;
 	float   inputDistributionB;
@@ -47,83 +86,94 @@ main(void)
 	float   mean;
 	float   variance;
 
-	uint32_t command;
+	/*
+	 *	Set status to inform host that calculation will start
+	 */
+	C0HALSetStatusRegister(kSignaloidSoCStatusCalculating);
 
-	while (1)
+	/*
+	 *	Turn on status LED
+	 */
+	C0HALSetLed(true);
+
+	/*
+	 *	Create distributional values from inputs
+	 */
+	inputDistributionA  = UxHwFloatUniformDist(kC0HALInputBufferFloat[0], kC0HALInputBufferFloat[1]);
+	inputDistributionB  = UxHwFloatUniformDist(kC0HALInputBufferFloat[2], kC0HALInputBufferFloat[3]);
+
+	/*
+	 *	Calculate
+	 */
+	result = inputDistributionA + inputDistributionB;
+
+	/*
+	 *	Compute the mean (first moment) and variance
+	 *	(second centralised moment) of the result.
+	 */
+	mean        = UxHwFloatNthMoment(result, 1);
+	variance    = UxHwFloatNthMoment(result, 2);
+
+	/*
+	 *	Return the mean and variance as two floats by writing them
+	 *	to the output buffer.
+	 */
+	kC0HALOutputBufferFloat[0]  = mean;
+	kC0HALOutputBufferFloat[1]  = variance;
+
+	/*
+	 *	Turn off status LED
+	 */
+	C0HALSetLed(false);
+
+	/*
+	 *	Set status
+	 */
+	C0HALSetStatusRegister(kSignaloidSoCStatusDone);
+}
+
+void
+handleCommand(SignaloidSoCCommand command)
+{
+	switch (command)
 	{
 		/*
-		 *	Set status to "waitingForCommand"
+		 *	Example command. This is the core of the template: read
+		 *	inputs from kC0HALInputBuffer*, compute, and write results
+		 *	to kC0HALOutputBuffer*. Replace the body with your own
+		 *	computation, or add more `case`s for additional commands.
 		 */
-		C0HALSetStatusRegister(kSignaloidSoCStatusWaitingForCommand);
+		case kCalculateAddition:
+			handleAddition();
+			break;
 
-		/*
-		 *	Block until command is issued
-		 */
-		while ((command = C0HALGetCommandRegister()) == kCalculateNoCommand) {}
+		default:
+			C0HALSetStatusRegister(kSignaloidSoCStatusInvalidCommand);
+			break;
+	}
+}
 
-		/*
-		 *	Set status to inform host that calculation will start
-		 */
-		C0HALSetStatusRegister(kSignaloidSoCStatusCalculating);
+void
+setup(void)
+{
+	C0HALSetLed(false);
+	C0HALSetStatusRegister(kSignaloidSoCStatusWaitingForCommand);
+}
 
-		/*
-		 *	Turn on status LED
-		 */
-		C0HALSetLed(true);
+void
+loop(void)
+{
+	SignaloidSoCCommand command = waitForCommand();
+	handleCommand(command);
+	waitForIdle();
+}
 
-		switch (command)
-		{
-			/*
-			 *	Example command. This is the core of the template: read
-			 *	inputs from kC0HALInputBuffer*, compute, and write results
-			 *	to kC0HALOutputBuffer*. Replace the body with your own
-			 *	computation, or add more `case`s for additional commands.
-			 */
-			case kCalculateAddition:
-				/*
-				 *	Create distributional values from inputs
-				 */
-				inputDistributionA  = UxHwFloatUniformDist(kC0HALInputBufferFloat[0], kC0HALInputBufferFloat[1]);
-				inputDistributionB  = UxHwFloatUniformDist(kC0HALInputBufferFloat[2], kC0HALInputBufferFloat[3]);
-
-				/*
-				 *	Calculate
-				 */
-				result = inputDistributionA + inputDistributionB;
-
-				/*
-				 *	Compute the mean (first moment) and variance
-				 *	(second centralised moment) of the result.
-				 */
-				mean        = UxHwFloatNthMoment(result, 1);
-				variance    = UxHwFloatNthMoment(result, 2);
-
-				/*
-				 *	Return the mean and variance as two floats by writing them
-				 *	to the output buffer.
-				 */
-				kC0HALOutputBufferFloat[0]  = mean;
-				kC0HALOutputBufferFloat[1]  = variance;
-
-				/*
-				 *	Set status
-				 */
-				C0HALSetStatusRegister(kSignaloidSoCStatusDone);
-				break;
-
-			default:
-				C0HALSetStatusRegister(kSignaloidSoCStatusInvalidCommand);
-				break;
-		}
-
-		/*
-		 *	Turn off status LED
-		 */
-		C0HALSetLed(false);
-
-		/*
-		 *	Block until command is cleared
-		 */
-		while (C0HALGetCommandRegister() != kCalculateNoCommand) {}
+int
+main(void)
+{
+	setup();
+	while (1)
+	{
+		loop();
 	}
 }
