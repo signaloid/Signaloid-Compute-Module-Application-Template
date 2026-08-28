@@ -30,21 +30,6 @@ UTILITIES_DIR   := ../submodules/Signaloid-Compute-Module-Utilities
 MODE := lram
 
 
-# Use this variable to add your own build flags. It will be appended to the
-# CFLAGS and CXXFLAGS.
-#
-# Examples:
-# BUILD_FLAGS += -DMY_CUSTOM_BUILD_FLAG=\""This is a test"\"
-# BUILD_FLAGS += -DENABLE_DEBUG_LOGGING=0
-
-# Add all your sources here
-PROGRAM     := main
-SOURCES     := main.c
-# SOURCES     += file1.c
-# SOURCES     += file2.c
-# SOURCES     += file3.c
-
-
 # Set variables based on DEVICE_TYPE.
 #
 # The DEVICE_TYPE variable is set based on the selected Core ID you are
@@ -56,6 +41,18 @@ SOURCES     := main.c
 #   - SIGNALOID_C0_MICROSD
 #   - SIGNALOID_C0_MICROSD_PLUS
 #   - SIGNALOID_C0_SD
+
+
+# Add all your sources here.
+# Note that ordering matters. Α later module only gets linked if the
+# symbols it provides are referenced in an earlier file in the objects/sources
+# positional list
+PROGRAM     := main
+SOURCES     += main.c
+# SOURCES     += file1.c
+# SOURCES     += file2.c
+# SOURCES     += file3.c
+
 
 # Include the Hardware Abstraction Layer library and register maps for the
 # selected Signaloid compute module
@@ -82,3 +79,10 @@ INC_DIRS    += .
 
 # Uncomment if you want to use the C0Logger utility in your application.
 # SOURCES     += $(UTILITIES_DIR)/src/c/src/C0Logger.c
+
+# Use this variable to add your own build flags. It will be appended to the
+# CFLAGS and CXXFLAGS.
+#
+# Examples:
+# BUILD_FLAGS += -DMY_CUSTOM_BUILD_FLAG=\""This is a test"\"
+# BUILD_FLAGS += -DENABLE_DEBUG_LOGGING=0

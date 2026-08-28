@@ -1,3 +1,6 @@
+#!/usr/bin/env python -u
+# PYTHON_ARGCOMPLETE_OK
+
 #   Copyright (c) 2026, Signaloid.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,8 +23,10 @@
 
 
 import argparse
+import time
 from enum import IntEnum
 
+import argcomplete
 from app_helpers import (
     compute_module_args,
     init_compute_module,
@@ -29,6 +34,7 @@ from app_helpers import (
     run_and_get_results,
     unpack_floats,
 )
+from tqdm import tqdm
 
 
 # Command IDs supported by the SoC application.
@@ -43,8 +49,8 @@ def parse_arguments(
     explicit_args: list[str] | None = None,
 ):
     parser = argparse.ArgumentParser(
-        description="Host application for the Signaloid C0 compute modules \
-            template application"
+        description="Host application for the Signaloid C0 compute modules "
+        "template application"
     )
 
     compute_module_args(parser=parser)
@@ -64,10 +70,25 @@ def parse_arguments(
         "input_values",
         nargs=4,
         type=float,
-        help="The two input uniform distributions X and Y, given as \
-            [min, max] pairs: [X_min, X_max, Y_min, Y_max]",
+        help="The two input uniform distributions X and Y, given as "
+        "[min, max] pairs: [X_min, X_max, Y_min, Y_max]",
     )
 
+    parser.add_argument(
+        "--benchmark",
+        default=False,
+        action="store_true",
+        help="Enable benchmarking",
+    )
+
+    parser.add_argument(
+        "--iterations",
+        type=int,
+        default=20,
+        help="Benchmarking iterations. Default: 20",
+    )
+
+    argcomplete.autocomplete(parser)
     args = parser.parse_args(explicit_args)
     return args
 
@@ -87,13 +108,35 @@ def main(explicit_args: list[str] | None = None):
         size=compute_module.INPUT_BUFFER_SIZE_BYTES,
     )
 
-    # Run the calculation and get the results
-    result_buffer = run_and_get_results(
-        compute_module=compute_module,
-        command_value=command_value,
-        input_buffer=input_buffer,
-        stop_on_exit=args.stop_on_exit
-    )
+    if args.benchmark:
+        iterations = args.iterations
+    else:
+        iterations = 1
+
+    totalDuration: float = 0
+    result_buffer = bytes()
+    for _ in tqdm(range(iterations), disable=not args.benchmark):
+        startTime = time.perf_counter()
+
+        # Run the calculation and get the results
+        result_buffer = run_and_get_results(
+            compute_module=compute_module,
+            command_value=command_value,
+            input_buffer=input_buffer,
+            stop_on_exit=args.stop_on_exit,
+            verbose=not args.benchmark,
+        )
+
+        endTime = time.perf_counter()
+        iterationTime = endTime - startTime
+        totalDuration += iterationTime
+
+    if args.benchmark:
+        meanTime = totalDuration / iterations
+        print(
+            f"Mean execution time over {iterations} ",
+            f"iterations: {meanTime:.6f} seconds",
+        )
 
     # Unpack the device's response. The SoC returns two floats here (mean
     # and variance).
