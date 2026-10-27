@@ -332,7 +332,7 @@ workflow is the following:
 - [Signaloid Compute Modules Documentation](https://docs.signaloid.io/docs/compute-modules/)
 - [Signaloid Compute Module Utilities](https://github.com/signaloid/Signaloid-Compute-Module-Utilities)
 - [Signaloid Technology Explainers](https://signaloid.com/technology-explainers)
-- [Signaloid Python](https://github.com/signaloid/Signaloid-Python)
+- [Signaloid Data Toolkit](https://github.com/signaloid/signaloid-data-toolkit)
 
 ## License
 
